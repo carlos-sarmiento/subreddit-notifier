@@ -1,13 +1,12 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using System.Net.Http;
 using Serilog;
-using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Text;
+using System.Net;
 
 namespace SubredditNotifier
 {
@@ -96,10 +95,15 @@ namespace SubredditNotifier
 
             foreach (var post in f4SomethingPosts)
             {
-                Console.WriteLine($"{post.title} - {post.url}");
+                Logger.Information("{title} - {url}", post.title, post.url);
 
                 var data = new StringContent(JsonSerializer.Serialize(post), Encoding.UTF8, "application/json");
                 var response = await client.PostAsync(config.HomeAssistantWebhook, data);
+
+                if (response.StatusCode != HttpStatusCode.OK)
+                {
+                    Logger.Information("{statusCode} - {title}", response.StatusCode, post.title);
+                }
 
                 notifiedPosts.Add(post.id);
             }
@@ -112,11 +116,8 @@ namespace SubredditNotifier
             System.IO.File.WriteAllLines(config.RegistryFile, notifiedPosts);
         }
 
-
-
         private static Configuration GetConfiguration()
         {
-
             var maxNotifiedCount = int.Parse(Environment.GetEnvironmentVariable("MAX_TRACKING_COUNT") ?? "200");
             var registryFile = Environment.GetEnvironmentVariable("REGISTRY_PATH") ?? "notifiedPosts.txt";
             var regexToMatch = Environment.GetEnvironmentVariable("REGEX") ?? ".*";
@@ -145,7 +146,6 @@ namespace SubredditNotifier
                    );
         }
 
-
         private record Configuration(
             int MaxNotifiedCount,
             int PollingFrequency,
@@ -155,5 +155,4 @@ namespace SubredditNotifier
             string HomeAssistantWebhook
         );
     }
-
 }
