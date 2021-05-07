@@ -7,6 +7,7 @@ using System.Text.Json;
 using System.Text.RegularExpressions;
 using System.Text;
 using System.Net;
+using System.Collections.Generic;
 
 namespace SubredditNotifier
 {
@@ -90,7 +91,17 @@ namespace SubredditNotifier
                                         }).ToList();
 
             var f4Regex = new Regex(config.RegexToMatch, RegexOptions.IgnoreCase | RegexOptions.Compiled);
-            var notifiedPosts = System.IO.File.ReadAllLines(config.RegistryFile).ToList();
+
+            var notifiedPosts = new List<string>();
+            try
+            {
+                notifiedPosts = System.IO.File.ReadAllLines(config.RegistryFile).ToList();
+            }
+            catch (System.IO.FileNotFoundException)
+            {
+                System.IO.File.CreateText(config.RegistryFile);
+            }
+
             var f4SomethingPosts = posts.Where(p => !notifiedPosts.Contains(p.id) && f4Regex.IsMatch(p.title)).ToList();
 
             foreach (var post in f4SomethingPosts)
