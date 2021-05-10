@@ -69,7 +69,7 @@ namespace SubredditNotifier
 
         private static async Task PollReddit(Configuration config)
         {
-            var urlToCheck = $"https://www.reddit.com/r/{config.Subreddit}/new/.json?count=100";
+            var urlToCheck = $"https://www.reddit.com/r/{config.Subreddit}/new/.json?count=25";
 
             var client = new HttpClient();
             var content = await client.GetStringAsync(urlToCheck);
@@ -87,6 +87,7 @@ namespace SubredditNotifier
                                                 id = data.GetProperty("id").GetString(),
                                                 url = url.GetString(),
                                                 title = title.GetString(),
+                                                json = JsonSerializer.Serialize(data)
                                             };
                                         }).ToList();
 
@@ -108,7 +109,7 @@ namespace SubredditNotifier
             {
                 Logger.Information("{title} - {url}", post.title, post.url);
 
-                var data = new StringContent(JsonSerializer.Serialize(post), Encoding.UTF8, "application/json");
+                var data = new StringContent(post.json, Encoding.UTF8, "application/json");
                 var response = await client.PostAsync(config.HomeAssistantWebhook, data);
 
                 if (response.StatusCode != HttpStatusCode.OK)
